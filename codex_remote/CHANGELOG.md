@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.14
+
+- Remove terminal QR rendering; pairing uses the reliable manual code shown in logs.
+
 ## 0.1.13
 
 - Render pairing QR codes in compact ASCII for Home Assistant log viewers.

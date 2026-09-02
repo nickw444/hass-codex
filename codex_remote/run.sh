@@ -126,20 +126,12 @@ if bashio::config.true 'pairing_code_on_start'; then
     pair_json="$(mktemp /tmp/codex-remote-pair.XXXXXX)"
     if codex remote-control pair --json >"${pair_json}"; then
         manual_code="$(jq -er '.manualPairingCode' "${pair_json}")"
-        pairing_code="$(jq -er '.pairingCode' "${pair_json}")"
         expires_at="$(jq -er '.expiresAt' "${pair_json}")"
         expires_text="$(date -u -d "@${expires_at}" '+%Y-%m-%d %H:%M:%S UTC')"
         bashio::log.warning "------------------------------------------------------------"
         bashio::log.warning "STEP 2 OF 2 — PAIR YOUR PHONE WITH CODEX REMOTE"
         bashio::log.warning "Remote pairing code: ${manual_code}"
         bashio::log.warning "Expires: ${expires_text}"
-        if bashio::config.true 'pairing_qr_on_start'; then
-            bashio::log.warning "Scan this QR code in ChatGPT mobile (manual code remains available above):"
-            # ASCII avoids the multi-line Unicode block rendering that causes
-            # excessive whitespace in Home Assistant's log viewer.
-            qrencode -t ASCII "${pairing_code}" 2>/dev/null || \
-                bashio::log.warning "Could not render the QR code; use the manual pairing code above."
-        fi
         bashio::log.warning "In ChatGPT mobile: open Remote, add a host, choose manual code, and enter this code."
         bashio::log.warning "This is NOT the ChatGPT device-login code."
         bashio::log.warning "------------------------------------------------------------"
