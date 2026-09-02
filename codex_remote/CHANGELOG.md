@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.9
+
+- Populate the complete standalone release layout required by the app-server daemon.
+
 ## 0.1.8
 
 - Provide the managed standalone path required by Codex Remote Control.

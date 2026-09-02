@@ -4,16 +4,32 @@ set -Eeuo pipefail
 umask 077
 export CODEX_HOME=/data/codex
 
+fatal() {
+    bashio::log.fatal "$1"
+    exit 1
+}
+
 mkdir -p "${CODEX_HOME}"
 chmod 700 "${CODEX_HOME}"
 
-# `remote-control start` only accepts the standalone-install layout managed by
-# the official installer. The image contains the checksum-verified Codex
-# release binary, so expose that same binary at the required persistent path.
-managed_codex_dir="${CODEX_HOME}/packages/standalone/current"
-mkdir -p "${managed_codex_dir}"
-ln -sfn /usr/local/bin/codex "${managed_codex_dir}/codex"
-chmod 700 "${CODEX_HOME}/packages" "${CODEX_HOME}/packages/standalone" "${managed_codex_dir}"
+# `remote-control start` requires the complete standalone-install layout. The
+# image contains that checksum-verified package under /opt/codex; copy it once
+# into the persistent CODEX_HOME release layout and point `current` at it.
+case "$(uname -m)" in
+    x86_64) managed_target="x86_64-unknown-linux-musl" ;;
+    aarch64) managed_target="aarch64-unknown-linux-musl" ;;
+    *) fatal "Unsupported container architecture: $(uname -m)" ;;
+esac
+managed_root="${CODEX_HOME}/packages/standalone"
+managed_release="${managed_root}/releases/0.152.1-${managed_target}"
+if [[ ! -x "${managed_release}/bin/codex" || ! -x "${managed_release}/codex-resources/bwrap" ]]; then
+    rm -rf "${managed_release}"
+    mkdir -p "${managed_root}/releases"
+    cp -a /opt/codex "${managed_release}"
+    ln -sfn bin/codex "${managed_release}/codex"
+fi
+ln -sfn "releases/0.152.1-${managed_target}" "${managed_root}/current"
+chmod 700 "${CODEX_HOME}/packages" "${managed_root}" "${managed_root}/releases" "${managed_release}"
 
 cleanup() {
     codex remote-control stop >/dev/null 2>&1 || true
@@ -23,11 +39,6 @@ shutdown() {
 }
 trap cleanup EXIT
 trap shutdown INT TERM
-
-fatal() {
-    bashio::log.fatal "$1"
-    exit 1
-}
 
 if [[ ! -d /config || ! -w /config ]]; then
     fatal "/config is not present or is not writable. Check the homeassistant_config map."
