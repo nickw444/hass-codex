@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.7
+
+- Keep device authentication attached to the terminal so Codex prints the login URL and code.
+
 ## 0.1.6
 
 - Remove redundant add-on metadata rejected by the current Home Assistant linter.

@@ -85,7 +85,9 @@ if ! codex login status >/dev/null 2>&1; then
     bashio::log.warning "This authenticates the add-on; it is NOT the phone pairing code."
     bashio::log.warning "Open the URL and enter the one-time code printed below."
     bashio::log.warning "------------------------------------------------------------"
-    if ! codex login --device-auth 2>&1 | sed -e 's/^/[ChatGPT device login] /'; then
+    # Keep Codex attached directly to the add-on's terminal. The device-auth
+    # flow suppresses the URL/code when stdout is piped (non-interactive).
+    if ! codex login --device-auth; then
         fatal "ChatGPT device login failed or expired. Restart the add-on to retry."
     fi
     bashio::log.info "ChatGPT sign-in completed."
