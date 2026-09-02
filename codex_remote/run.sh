@@ -7,6 +7,14 @@ export CODEX_HOME=/data/codex
 mkdir -p "${CODEX_HOME}"
 chmod 700 "${CODEX_HOME}"
 
+# `remote-control start` only accepts the standalone-install layout managed by
+# the official installer. The image contains the checksum-verified Codex
+# release binary, so expose that same binary at the required persistent path.
+managed_codex_dir="${CODEX_HOME}/packages/standalone/current"
+mkdir -p "${managed_codex_dir}"
+ln -sfn /usr/local/bin/codex "${managed_codex_dir}/codex"
+chmod 700 "${CODEX_HOME}/packages" "${CODEX_HOME}/packages/standalone" "${managed_codex_dir}"
+
 cleanup() {
     codex remote-control stop >/dev/null 2>&1 || true
 }

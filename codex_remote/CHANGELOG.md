@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.8
+
+- Provide the managed standalone path required by Codex Remote Control.
+
 ## 0.1.7
 
 - Keep device authentication attached to the terminal so Codex prints the login URL and code.
