@@ -1,4 +1,14 @@
 ARG BUILD_FROM=ghcr.io/home-assistant/amd64-base:3.22
+
+FROM node:22-alpine AS web-builder
+
+WORKDIR /build
+COPY web/package.json web/package-lock.json ./
+RUN npm ci
+COPY web/ ./
+RUN npm run build
+RUN npm prune --omit=dev
+
 FROM ${BUILD_FROM}
 
 ARG BUILD_ARCH
@@ -30,6 +40,8 @@ RUN apk add --no-cache \
     unzip \
     zip
 
+RUN apk add --no-cache nodejs
+
 RUN set -eux; \
     case "${BUILD_ARCH}" in \
       amd64) target="x86_64" ;; \
@@ -49,6 +61,12 @@ RUN set -eux; \
     if [ -x /opt/codex/bin/codex-code-mode-host ]; then ln -s /opt/codex/bin/codex-code-mode-host /usr/local/bin/codex-code-mode-host; fi; \
     /usr/local/bin/codex --version | grep -F "${CODEX_VERSION}"; \
     rm -rf /tmp/codex
+
+COPY --from=web-builder /build/dist /opt/hass-codex-web
+COPY --from=web-builder /build/node_modules /opt/hass-codex-web/node_modules
+COPY --from=web-builder /build/package.json /opt/hass-codex-web/package.json
+
+RUN node --version && test -f /opt/hass-codex-web/server/index.js
 
 COPY run.sh /run.sh
 RUN chmod 0755 /run.sh

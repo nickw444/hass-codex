@@ -51,3 +51,9 @@
 ## 0.1.0
 
 - Initial experimental Codex Remote Control add-on.
+# 0.2.0
+
+- Add a Home Assistant ingress browser UI built with assistant-ui.
+- Add a local ACP gateway for persistent `/config` Codex sessions.
+- Add browser ChatGPT device login and manual Remote pairing controls.
+- Preserve logs-only login/pairing workflows and the existing sandbox policy.

@@ -1,11 +1,19 @@
 name: Codex Remote
-version: "0.1.15"
+version: "0.2.0"
 slug: codex_remote
 description: Run Codex Remote Control against your Home Assistant configuration
 url: https://github.com/nickw444/hass-codex
 arch:
   - amd64
   - aarch64
+
+ingress: true
+ingress_port: 8099
+panel_icon: mdi:robot-outline
+panel_title: Codex
+
+startup: application
+boot: auto
 
 init: false
 

@@ -1,0 +1,26 @@
+services:
+  codex:
+    # Use amd64 to match the published add-on image and Codex package. Remove
+    # this line if you intentionally want to build an arm64 local image.
+    platform: linux/amd64
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        BUILD_ARCH: amd64
+        BUILD_FROM: ghcr.io/home-assistant/amd64-base:3.22
+        CODEX_VERSION: "0.152.1"
+        CODEX_RELEASE_TAG: rust-v0.152.1
+    environment:
+      HASS_CODEX_LOCAL_DOCKER: "true"
+      HASS_CODEX_PORT: "8099"
+      HASS_CODEX_PAIR_ON_START: "false"
+      HASS_CODEX_FORCE_LOGIN: "false"
+      # Optional: export HASS_CODEX_MCP_URL before `docker compose up` to
+      # exercise real HA-MCP tools as well.
+      HASS_CODEX_MCP_URL: "${HASS_CODEX_MCP_URL:-}"
+    ports:
+      - "127.0.0.1:8099:8099"
+    volumes:
+      - ./local-config:/config
+      - ./local-data:/data

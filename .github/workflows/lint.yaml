@@ -13,8 +13,20 @@ jobs:
       - uses: ludeeus/action-shellcheck@2.0.0
         with:
           scandir: './codex_remote'
-      - name: Run static tests
-        run: bash codex_remote/tests/test_static.sh
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: codex_remote/web/package-lock.json
+      - run: bash codex_remote/tests/test_static.sh
+      - run: npm ci
+        working-directory: codex_remote/web
+      - run: npm run lint
+        working-directory: codex_remote/web
+      - run: npm test
+        working-directory: codex_remote/web
+      - run: npm run typecheck
+        working-directory: codex_remote/web
       - uses: frenck/action-addon-linter@v2.21.0
         with:
           path: ./codex_remote
