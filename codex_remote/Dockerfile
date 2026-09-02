@@ -13,6 +13,7 @@ RUN apk add --no-cache \
     git \
     jq \
     openssh-client \
+    procps-ng \
     tar
 
 RUN set -eux; \

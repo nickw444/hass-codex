@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.10
+
+- Install full `ps` support required by Codex app-server process supervision.
+
 ## 0.1.9
 
 - Populate the complete standalone release layout required by the app-server daemon.
