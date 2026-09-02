@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.15
+
+- Mark the add-on as stable by removing the experimental stage metadata.
+
 ## 0.1.14
 
 - Remove terminal QR rendering; pairing uses the reliable manual code shown in logs.
