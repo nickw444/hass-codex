@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.11
+
+- Add common CLI tools for repository inspection, text processing, archives, and scripting.
+
 ## 0.1.10
 
 - Install full `ps` support required by Codex app-server process supervision.

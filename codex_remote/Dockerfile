@@ -7,14 +7,28 @@ ARG CODEX_RELEASE_TAG
 
 RUN apk add --no-cache \
     bash \
+    bzip2 \
     ca-certificates \
     coreutils \
     curl \
+    diffutils \
+    fd \
+    file \
+    findutils \
+    gawk \
+    grep \
     git \
     jq \
+    less \
     openssh-client \
+    patch \
+    python3 \
     procps-ng \
-    tar
+    ripgrep \
+    tar \
+    tree \
+    unzip \
+    zip
 
 RUN set -eux; \
     case "${BUILD_ARCH}" in \
