@@ -1,0 +1,8 @@
+configuration:
+  ha_mcp_url: Home Assistant MCP URL
+  pairing_code_on_start: Generate a Remote pairing code on start
+  force_device_login_on_start: Force ChatGPT device login on start
+description:
+  ha_mcp_url: Raw HA-MCP Streamable HTTP URL, including its secret path.
+  pairing_code_on_start: Print one short-lived phone pairing code in the logs.
+  force_device_login_on_start: Clear stored login and require device authentication.

@@ -1,0 +1,35 @@
+name: Build add-on
+
+on:
+  push:
+    tags: ['v*.*.*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        arch: [amd64, aarch64]
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: home-assistant/builder@4de35182ce1e329181bffcbcc84d33db5e2c7e10
+        with:
+          image: ${{ matrix.arch }}
+          args: |
+            --${{ matrix.arch }} \
+            --target /data/codex_remote \
+            --image ${{ matrix.arch }}-addon-hass-codex \
+            --docker-hub ghcr.io/${{ github.repository_owner }} \
+            --addon
