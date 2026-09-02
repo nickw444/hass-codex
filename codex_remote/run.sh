@@ -135,7 +135,9 @@ if bashio::config.true 'pairing_code_on_start'; then
         bashio::log.warning "Expires: ${expires_text}"
         if bashio::config.true 'pairing_qr_on_start'; then
             bashio::log.warning "Scan this QR code in ChatGPT mobile (manual code remains available above):"
-            qrencode -t UTF8 "${pairing_code}" 2>/dev/null || \
+            # ASCII avoids the multi-line Unicode block rendering that causes
+            # excessive whitespace in Home Assistant's log viewer.
+            qrencode -t ASCII "${pairing_code}" 2>/dev/null || \
                 bashio::log.warning "Could not render the QR code; use the manual pairing code above."
         fi
         bashio::log.warning "In ChatGPT mobile: open Remote, add a host, choose manual code, and enter this code."

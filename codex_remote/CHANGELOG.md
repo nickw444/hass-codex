@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.13
+
+- Render pairing QR codes in compact ASCII for Home Assistant log viewers.
+
 ## 0.1.12
 
 - Optionally render the app pairing artifact as a terminal QR code in the add-on logs.
