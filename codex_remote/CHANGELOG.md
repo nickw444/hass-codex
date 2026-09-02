@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.12
+
+- Optionally render the app pairing artifact as a terminal QR code in the add-on logs.
+
 ## 0.1.11
 
 - Add common CLI tools for repository inspection, text processing, archives, and scripting.

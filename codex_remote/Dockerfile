@@ -24,6 +24,7 @@ RUN apk add --no-cache \
     patch \
     python3 \
     procps-ng \
+    libqrencode-tools \
     ripgrep \
     tar \
     tree \

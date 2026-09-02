@@ -1,5 +1,5 @@
 name: Codex Remote
-version: "0.1.11"
+version: "0.1.12"
 slug: codex_remote
 description: Run Codex Remote Control against your Home Assistant configuration
 url: https://github.com/nickw444/hass-codex
@@ -21,9 +21,11 @@ map:
 options:
   ha_mcp_url: ""
   pairing_code_on_start: true
+  pairing_qr_on_start: true
   force_device_login_on_start: false
 
 schema:
   ha_mcp_url: password
   pairing_code_on_start: bool
+  pairing_qr_on_start: bool
   force_device_login_on_start: bool
