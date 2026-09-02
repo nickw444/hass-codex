@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.6
+
+- Remove redundant add-on metadata rejected by the current Home Assistant linter.
+
 ## 0.1.5
 
 - Fix device-login output prefixing on BusyBox-based Home Assistant images.
