@@ -15,7 +15,10 @@ add-on.
 3. Install **Codex Remote**, set `ha_mcp_url`, and start the add-on.
 4. Follow the two clearly labelled setup blocks in the add-on logs:
    first **ChatGPT sign-in**, then **Remote phone pairing**.
-5. After pairing, set `pairing_code_on_start` to `false` and restart.
+5. Open the **Codex** admin-only panel from the Home Assistant sidebar. The
+   panel is an experimental embedded codex-webui and shares live threads with
+   the mobile Remote client.
+6. After pairing, set `pairing_code_on_start` to `false` and restart.
 
 Make a Home Assistant backup before allowing an agent to edit `/config`.
 

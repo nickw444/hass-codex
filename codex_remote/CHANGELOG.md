@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.2.0
+
+- Add an experimental admin-only Home Assistant ingress panel backed by the
+  pinned LimLLL/codex-webui source.
+- Connect the WebUI through `codex app-server proxy` to the existing Remote
+  Control daemon so mobile and browser clients share threads and events.
+- Add persistent WebUI state, terminal/plugin capabilities, attribution, and a
+  disposable Docker/Playwright ingress smoke harness.
+
 ## 0.1.15
 
 - Mark the add-on as stable by removing the experimental stage metadata.

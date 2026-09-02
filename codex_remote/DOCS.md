@@ -3,6 +3,47 @@
 This add-on runs the experimental Codex Remote Control daemon with the Home
 Assistant `/config` directory mounted read/write.
 
+## Embedded WebUI (experimental POC)
+
+Version 0.2.0 also exposes LimLLL/codex-webui through a Home Assistant
+admin-only ingress panel named **Codex**. The browser and ChatGPT mobile Remote
+client connect to the same Codex app-server daemon, so threads, streaming turns,
+and approval requests are shared between them.
+
+The WebUI is built from the pinned AGPL-licensed upstream source documented in
+`codex_remote/THIRD_PARTY.md`. It is not the private Codex desktop application.
+No direct host port is published; Home Assistant Supervisor ingress fronts the
+internal port and supplies authentication. Direct or spoofed requests that do
+not originate from the Supervisor ingress proxy are rejected.
+
+The WebUI database and logs are persisted under `/data/codex-webui`; Codex
+credentials and app-server state remain under `/data/codex`. The initial file
+workspace and terminal directory are `/config`.
+
+This POC intentionally leaves terminal access, plugin installation, approval
+policy changes, and sandbox policy changes enabled. These controls are
+administrative capabilities: `never` approval mode and unrestricted sandbox
+mode can allow commands outside `/config`, and terminal/plugin operations may
+use network access. Make a Home Assistant backup and grant access only to
+trusted administrators. The add-on rewrites a safe baseline (`on-request`,
+`workspace-write`, network disabled) on every restart. OnlyOffice is not part
+of this POC.
+
+### Reproduce the local browser smoke test
+
+Build the image first, then run:
+
+```sh
+PLAYWRIGHT_BROWSERS_PATH=/tmp/pw-browsers \
+  bash codex_remote/tests/e2e/run.sh
+```
+
+The harness creates disposable fixture directories, starts the image behind a
+static Supervisor-proxy simulation at `172.30.32.2`, runs headless Playwright
+checks for the prefixed page and nested-route refresh, and removes its test
+containers and fixtures afterward. It never uses the add-on's local
+development data directories.
+
 ## Prerequisites
 
 - Home Assistant OS/Supervisor with an `amd64` or `aarch64` host.

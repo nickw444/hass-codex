@@ -3,6 +3,13 @@ set -Eeuo pipefail
 
 umask 077
 export CODEX_HOME=/data/codex
+export HOME=/data/webui-home
+export WEBUI_DB_PATH=/data/codex-webui/codex-webui.sqlite
+export WEBUI_LOG_DIR=/data/codex-webui/logs
+export WORKSPACE_ROOTS=/config
+export HASS_CODEX_HA_INGRESS=true
+export CODEX_WEBUI_APP_SERVER_TRANSPORT=proxy
+export PORT=8099
 
 fatal() {
     bashio::log.fatal "$1"
@@ -11,6 +18,16 @@ fatal() {
 
 mkdir -p "${CODEX_HOME}"
 chmod 700 "${CODEX_HOME}"
+mkdir -p /data/codex-webui/logs /data/webui-home
+chmod 700 /data/codex-webui /data/codex-webui/logs /data/webui-home
+
+webui_api_key_file=/data/codex-webui/webui-api-key
+if [[ ! -s "${webui_api_key_file}" ]]; then
+    umask 077
+    head -c 48 /dev/urandom | base64 | tr -d '\n' >"${webui_api_key_file}"
+fi
+chmod 600 "${webui_api_key_file}"
+export WEBUI_API_KEY="$(<"${webui_api_key_file}")"
 
 # `remote-control start` requires the complete standalone-install layout. The
 # image contains that checksum-verified package under /opt/codex; copy it once
@@ -31,10 +48,17 @@ fi
 ln -sfn "releases/0.152.1-${managed_target}" "${managed_root}/current"
 chmod 700 "${CODEX_HOME}/packages" "${managed_root}" "${managed_root}/releases" "${managed_release}"
 
+webui_pid=""
+watchdog_pid=""
 cleanup() {
+    trap - EXIT INT TERM
+    if [[ -n "${watchdog_pid}" ]]; then kill "${watchdog_pid}" 2>/dev/null || true; fi
+    if [[ -n "${webui_pid}" ]]; then kill "${webui_pid}" 2>/dev/null || true; fi
+    wait "${webui_pid}" 2>/dev/null || true
     codex remote-control stop >/dev/null 2>&1 || true
 }
 shutdown() {
+    cleanup
     exit 0
 }
 trap cleanup EXIT
@@ -141,8 +165,32 @@ if bashio::config.true 'pairing_code_on_start'; then
     fi
 fi
 
-while sleep 15; do
-    if ! codex app-server daemon version >/dev/null 2>&1; then
-        fatal "The Codex app-server daemon stopped unexpectedly."
-    fi
-done
+if ! codex app-server daemon version >/dev/null 2>&1; then
+    fatal "Codex app-server daemon is not ready."
+fi
+
+cd /opt/codex-webui
+node /opt/codex-webui/dist/main.js &
+webui_pid=$!
+
+(
+    while sleep 15; do
+        if ! kill -0 "${webui_pid}" 2>/dev/null; then
+            exit 1
+        fi
+        if ! codex app-server daemon version >/dev/null 2>&1; then
+            kill "${webui_pid}" 2>/dev/null || true
+            exit 1
+        fi
+    done
+) &
+watchdog_pid=$!
+
+set +e
+wait "${webui_pid}"
+webui_status=$?
+set -e
+if [[ "${webui_status}" -ne 0 ]]; then
+    fatal "Codex WebUI exited unexpectedly (status ${webui_status})."
+fi
+fatal "Codex WebUI stopped."

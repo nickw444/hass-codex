@@ -1,0 +1,9 @@
+vendor/codex-webui/node_modules
+vendor/codex-webui/dist
+vendor/codex-webui/public
+local-config
+local-data
+web
+*.sqlite
+*.sqlite-*
+logs

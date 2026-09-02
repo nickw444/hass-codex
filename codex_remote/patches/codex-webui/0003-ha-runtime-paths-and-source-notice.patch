@@ -1,0 +1,59 @@
+diff --git a/src/app.module.ts b/src/app.module.ts
+index 43c0a88..9e718bc 100644
+--- a/src/app.module.ts
++++ b/src/app.module.ts
+@@ -31,11 +31,12 @@ import { TurnDiffModule } from './turn-diff/turn-diff.module';
+ import { TurnErrorsModule } from './turn-errors/turn-errors.module';
+ 
+ const isDev = process.env.NODE_ENV !== 'production';
++const logDir = process.env.WEBUI_LOG_DIR ?? join(process.cwd(), 'logs');
+ 
+ const rollTarget = {
+   target: 'pino-roll',
+   options: {
+-    file: join(process.cwd(), 'logs', 'app'),
++    file: join(logDir, 'app'),
+     size: '10m',
+     mkdir: true,
+     limit: { count: 5 },
+diff --git a/src/codex/codex-jsonrpc-client.ts b/src/codex/codex-jsonrpc-client.ts
+index 8770cdc..d0b4018 100644
+--- a/src/codex/codex-jsonrpc-client.ts
++++ b/src/codex/codex-jsonrpc-client.ts
+@@ -74,7 +74,7 @@ export interface CodexJsonRpcClientEvents {
+ }
+ 
+ const DEFAULT_REQUEST_TIMEOUT_MS = 30_000;
+-const LOG_DIR = join(globalThis.process.cwd(), 'logs');
++const LOG_DIR = process.env.WEBUI_LOG_DIR ?? join(globalThis.process.cwd(), 'logs');
+ 
+ function createJsonlStream(): WriteStream {
+   mkdirSync(LOG_DIR, { recursive: true });
+diff --git a/src/logs/logs.service.ts b/src/logs/logs.service.ts
+index b8b2397..cf8ac3c 100644
+--- a/src/logs/logs.service.ts
++++ b/src/logs/logs.service.ts
+@@ -13,7 +13,7 @@ const DEFAULT_LIMIT = 50;
+ const MAX_LIMIT = 200;
+ const EXPORT_LIMIT = 100;
+ const MAX_ENTRIES_CAP = 10_000;
+-const LOG_DIR = join(process.cwd(), 'logs');
++const LOG_DIR = process.env.WEBUI_LOG_DIR ?? join(process.cwd(), 'logs');
+ const LOG_FILE_PREFIX = 'app';
+ const SENSITIVE_KEY_PATTERN =
+   /(authorization|cookie|token|apikey|api_key|password|secret|credential)/i;
+diff --git a/web/src/components/settings/settings-page.tsx b/web/src/components/settings/settings-page.tsx
+index 694e552..543851b 100644
+--- a/web/src/components/settings/settings-page.tsx
++++ b/web/src/components/settings/settings-page.tsx
+@@ -83,6 +83,10 @@ export function SettingsPage() {
+ 
+         <Separator />
+ 
++        <p className="text-xs text-muted-foreground">
++          Codex WebUI POC · <a className="underline" href="https://github.com/LimLLL/codex-webui" target="_blank" rel="noreferrer">upstream source</a> · pinned at codex-0.152.1 (44ad73a99c4d4385fa60d0c519c243baf8f160b7) with Home Assistant integration patches
++        </p>
++
+         {section === 'general' && (
+           <GeneralSettings
+             dark={dark}

@@ -1,0 +1,145 @@
+diff --git a/src/auth/api-key.guard.ts b/src/auth/api-key.guard.ts
+index 42e3c5d..4e992cc 100644
+--- a/src/auth/api-key.guard.ts
++++ b/src/auth/api-key.guard.ts
+@@ -10,6 +10,7 @@ import { FastifyRequest } from 'fastify';
+ import type { Socket } from 'socket.io';
+ import { AuthService } from './auth.service';
+ import { IS_PUBLIC_KEY } from './public.decorator';
++import { isTrustedHaHttpRequest, isTrustedHaSocket } from '../ha-ingress';
+ 
+ interface HttpToken {
+   value: string;
+@@ -32,6 +33,12 @@ export class ApiKeyGuard implements CanActivate {
+       return true;
+     }
+ 
++    if (process.env.HASS_CODEX_HA_INGRESS === 'true') {
++      if (context.getType() === 'ws') {
++        if (isTrustedHaSocket(context.switchToWs().getClient<Socket>())) return true;
++      } else if (isTrustedHaHttpRequest(context.switchToHttp().getRequest<FastifyRequest>())) return true;
++    }
++
+     if (context.getType() === 'ws') {
+       const socket = context.switchToWs().getClient<Socket>();
+       const token = this.getSocketToken(socket);
+diff --git a/src/main.ts b/src/main.ts
+index ff9db33..26d40ff 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -12,9 +12,10 @@ import { join } from 'node:path';
+ import { Readable } from 'node:stream';
+ import { AppModule } from './app.module';
+ import { AllExceptionsFilter } from './common/all-exceptions.filter';
+-import { normalizeForwardedPrefix, renderIndexHtml } from './public-base-path';
++import { renderIndexHtml } from './public-base-path';
+ import { FILES_SETTING_KEYS } from './settings/settings.definitions';
+ import { SettingsService } from './settings/settings.service';
++import { ingressPathFromHeaders, isTrustedHaHttpRequest } from './ha-ingress';
+ 
+ /** Keeps generated SDK operation names stable across controller renames. */
+ function operationIdFactory(controllerKey: string, methodKey: string): string {
+@@ -49,6 +50,12 @@ async function bootstrap() {
+   app.useWebSocketAdapter(new IoAdapter(app));
+   app.setGlobalPrefix('api', { exclude: ['/'] });
+ 
++  if (process.env.HASS_CODEX_HA_INGRESS === 'true') {
++    app.getHttpAdapter().getInstance().addHook('onRequest', async (request, reply) => {
++      if (!isTrustedHaHttpRequest(request)) return reply.code(403).send({ error: 'Home Assistant ingress required' });
++    });
++  }
++
+   // `public/` is a gitignored build artifact, so it is absent on a fresh clone
+   // and during any backend-only dev loop. A missing SPA must not stop the
+   // server: there is simply no HTML to rewrite.
+@@ -77,9 +84,7 @@ async function bootstrap() {
+ 
+         if (payload instanceof Readable) payload.destroy();
+         reply.removeHeader('content-length');
+-        const basePath = normalizeForwardedPrefix(
+-          request.headers['x-forwarded-prefix'],
+-        );
++        const basePath = ingressPathFromHeaders(request.headers) ?? '/';
+         return renderIndexHtml(indexHtml, basePath);
+       });
+   }
+diff --git a/web/src/routes/router.tsx b/web/src/routes/router.tsx
+index eb4de31..8be5558 100644
+--- a/web/src/routes/router.tsx
++++ b/web/src/routes/router.tsx
+@@ -24,6 +24,8 @@ import { BASE_PATH } from '@/base-path';
+ export type LoginSearch = { redirect: string };
+ export type IntegrationsSearch = { tab: 'plugins' | 'apps' | 'mcps' };
+ 
++const isHomeAssistantIngress = BASE_PATH.startsWith('/api/hassio_ingress/');
++
+ const INTEGRATION_TABS = ['plugins', 'apps', 'mcps'] as const;
+ 
+ function sanitizeIntegrationsSearch(search: Record<string, unknown>): IntegrationsSearch {
+@@ -56,7 +58,7 @@ const loginRoute = createRoute({
+     redirect: sanitizeRedirect(search.redirect),
+   }),
+   beforeLoad: ({ search }) => {
+-    if (getApiToken()) {
++    if (getApiToken() || isHomeAssistantIngress) {
+       throw redirect({ to: search.redirect });
+     }
+   },
+@@ -68,7 +70,7 @@ const authenticatedRoute = createRoute({
+   getParentRoute: () => rootRoute,
+   id: 'authenticated',
+   beforeLoad: ({ location }) => {
+-    if (!getApiToken()) {
++    if (!getApiToken() && !isHomeAssistantIngress) {
+       throw redirect({
+         to: '/login',
+         search: { redirect: location.href },
+diff --git a/src/ha-ingress.ts b/src/ha-ingress.ts
+new file mode 100644
+index 0000000..a4d28e7
+--- /dev/null
++++ b/src/ha-ingress.ts
+@@ -0,0 +1,15 @@
++import type { FastifyRequest } from 'fastify';
++import type { Socket } from 'socket.io';
++const HA_INGRESS_PROXY = '172.30.32.2';
++export function isTrustedHaPeer(address: unknown): boolean { return address === HA_INGRESS_PROXY || address === `::ffff:${HA_INGRESS_PROXY}`; }
++export function normalizeIngressPath(header: string | string[] | undefined): string | null {
++  const raw = Array.isArray(header) ? header[0] : header;
++  const candidate = raw?.split(',', 1)[0]?.trim();
++  if (!candidate || candidate === '/') return '/';
++  if (!candidate.startsWith('/') || /["'<>?#\\\u0000-\u001f\u007f]/.test(candidate)) return null;
++  const segments = candidate.split('/').filter(Boolean);
++  return segments.length ? `/${segments.join('/')}/` : '/';
++}
++export function ingressPathFromHeaders(headers: Record<string, string | string[] | undefined>): string | null { return normalizeIngressPath(headers['x-ingress-path'] ?? headers['x-forwarded-prefix']); }
++export function isTrustedHaHttpRequest(request: FastifyRequest): boolean { return isTrustedHaPeer(request.ip ?? request.socket.remoteAddress) && ingressPathFromHeaders(request.headers) !== null; }
++export function isTrustedHaSocket(socket: Socket): boolean { return isTrustedHaPeer(socket.handshake.address ?? socket.conn.remoteAddress) && ingressPathFromHeaders(socket.handshake.headers) !== null; }
+diff --git a/src/ha-ingress.spec.ts b/src/ha-ingress.spec.ts
+new file mode 100644
+index 0000000..1023d85
+--- /dev/null
++++ b/src/ha-ingress.spec.ts
+@@ -0,0 +1,22 @@
++import { describe, expect, it } from 'vitest';
++import { ingressPathFromHeaders, isTrustedHaHttpRequest, isTrustedHaPeer, isTrustedHaSocket, normalizeIngressPath } from './ha-ingress';
++describe('Home Assistant ingress helpers', () => {
++  it('validates peers and paths', () => {
++    expect(isTrustedHaPeer('172.30.32.2')).toBe(true);
++    expect(isTrustedHaPeer('127.0.0.1')).toBe(false);
++    expect(normalizeIngressPath('/api/hassio_ingress/codex_remote')).toBe('/api/hassio_ingress/codex_remote/');
++    expect(normalizeIngressPath('/bad?token=secret')).toBeNull();
++  });
++  it('prefers X-Ingress-Path and supports fallback', () => {
++    expect(ingressPathFromHeaders({ 'x-ingress-path': '/current', 'x-forwarded-prefix': '/wrong' })).toBe('/current/');
++    expect(ingressPathFromHeaders({ 'x-forwarded-prefix': '/legacy' })).toBe('/legacy/');
++  });
++  it('requires the Supervisor peer for HTTP and Socket.IO', () => {
++    const headers = { 'x-ingress-path': '/api/hassio_ingress/codex_remote' };
++    expect(isTrustedHaHttpRequest({ ip: '172.30.32.2', headers } as any)).toBe(true);
++    expect(isTrustedHaHttpRequest({ ip: '10.0.0.8', headers } as any)).toBe(false);
++    expect(isTrustedHaHttpRequest({ ip: '172.30.32.2', headers: { 'x-ingress-path': '/bad?spoof' } } as any)).toBe(false);
++    expect(isTrustedHaSocket({ handshake: { address: '::ffff:172.30.32.2', headers } } as any)).toBe(true);
++    expect(isTrustedHaSocket({ handshake: { address: '10.0.0.8', headers } } as any)).toBe(false);
++  });
++});

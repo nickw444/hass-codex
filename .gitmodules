@@ -1,0 +1,3 @@
+[submodule "codex_remote/vendor/codex-webui"]
+	path = codex_remote/vendor/codex-webui
+	url = https://github.com/LimLLL/codex-webui.git

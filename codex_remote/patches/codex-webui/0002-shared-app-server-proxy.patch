@@ -1,0 +1,21 @@
+diff --git a/src/codex/codex-process-manager.service.ts b/src/codex/codex-process-manager.service.ts
+index f458dbb..0f404ce 100644
+--- a/src/codex/codex-process-manager.service.ts
++++ b/src/codex/codex-process-manager.service.ts
+@@ -116,9 +116,13 @@ export class CodexProcessManager implements OnModuleInit, OnModuleDestroy {
+       env['CODEX_HOME'] = codexHome;
+     }
+ 
+-    this.logger.log(`Spawning ${codexBin} app-server (stdio)`);
++    const useProxy = this.config.get<string>('CODEX_WEBUI_APP_SERVER_TRANSPORT', '') === 'proxy';
++    const args = useProxy
++      ? ['app-server', 'proxy']
++      : ['app-server', '--listen', 'stdio://'];
++    this.logger.log(`Spawning ${codexBin} ${args.join(' ')}`);
+ 
+-    const child = spawn(codexBin, ['app-server', '--listen', 'stdio://'], {
++    const child = spawn(codexBin, args, {
+       stdio: ['pipe', 'pipe', 'pipe'],
+       env,
+     });
+

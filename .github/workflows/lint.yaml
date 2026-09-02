@@ -10,11 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: ludeeus/action-shellcheck@2.0.0
         with:
           scandir: './codex_remote'
       - name: Run static tests
         run: bash codex_remote/tests/test_static.sh
+      - name: Validate pinned WebUI patches
+        run: bash codex_remote/tests/test_webui_patches.sh
       - uses: frenck/action-addon-linter@v2.21.0
         with:
           path: ./codex_remote

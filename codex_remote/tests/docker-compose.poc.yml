@@ -1,0 +1,41 @@
+services:
+  web:
+    image: ${CODEX_POC_IMAGE:-hass-codex:poc-amd64}
+    platform: ${CODEX_POC_PLATFORM:-linux/amd64}
+    working_dir: /opt/codex-webui
+    command: ["/bin/sh", "-c", "mkdir -p /data/home /data/codex /data/logs /config && exec /usr/bin/with-contenv node /opt/codex-webui/dist/main.js"]
+    environment:
+      NODE_ENV: production
+      HASS_CODEX_HA_INGRESS: "true"
+      WEBUI_API_KEY: disposable-test-key
+      WEBUI_DB_PATH: /data/codex-webui.sqlite
+      WEBUI_LOG_DIR: /data/logs
+      WORKSPACE_ROOTS: /config
+      CODEX_HOME: /data/codex
+      HOME: /data/home
+      PORT: "8099"
+      CODEX_BIN: /usr/local/bin/fake-codex
+    volumes:
+      - ./fixtures/fake-codex.js:/usr/local/bin/fake-codex:ro
+      - ./fixtures/poc-config:/config
+      - ./fixtures/poc-data:/data
+    networks:
+      poc:
+        ipv4_address: 172.30.32.3
+  proxy:
+    image: nginx:alpine
+    ports:
+      - "18173:8080"
+    volumes:
+      - ./fixtures/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - web
+    networks:
+      poc:
+        ipv4_address: 172.30.32.2
+networks:
+  poc:
+    ipam:
+      config:
+        - subnet: 172.30.32.0/24
+          gateway: 172.30.32.1
