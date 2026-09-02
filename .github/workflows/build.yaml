@@ -7,11 +7,18 @@ on:
 
 jobs:
   build:
+    name: Build ${{ matrix.arch }} image
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
-        arch: [amd64, aarch64]
+        include:
+          - arch: amd64
+            platform: linux/amd64
+            build_from: ghcr.io/home-assistant/amd64-base:3.22
+          - arch: aarch64
+            platform: linux/arm64
+            build_from: ghcr.io/home-assistant/aarch64-base:3.22
     permissions:
       contents: read
       packages: write
@@ -24,13 +31,22 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - uses: home-assistant/builder@6cb4fd3d1338b6e22d0958a4bcb53e0965ea63b4
-        with:
-          image: ${{ matrix.arch }}
-          args: |
-            --docker-hub-check \
-            --${{ matrix.arch }} \
-            --target /data/codex_remote \
-            --image ${{ matrix.arch }}-addon-hass-codex \
-            --docker-hub ghcr.io/${{ github.repository_owner }} \
-            --addon
+      - name: Build and push image
+        env:
+          VERSION: ${{ github.ref_name }}
+          ARCH: ${{ matrix.arch }}
+          PLATFORM: ${{ matrix.platform }}
+          BUILD_FROM: ${{ matrix.build_from }}
+        run: |
+          VERSION="${VERSION#v}"
+          docker buildx build \
+            --platform "${PLATFORM}" \
+            --file codex_remote/Dockerfile \
+            --build-arg BUILD_FROM="${BUILD_FROM}" \
+            --build-arg BUILD_ARCH="${ARCH}" \
+            --build-arg CODEX_VERSION=0.152.1 \
+            --build-arg CODEX_RELEASE_TAG=rust-v0.152.1 \
+            --tag "ghcr.io/${GITHUB_REPOSITORY_OWNER}/${ARCH}-addon-hass-codex:${VERSION}" \
+            --tag "ghcr.io/${GITHUB_REPOSITORY_OWNER}/${ARCH}-addon-hass-codex:latest" \
+            --push \
+            codex_remote
