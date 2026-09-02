@@ -1,4 +1,4 @@
-#!/usr/bin/with-contenv bashio
+#!/usr/bin/env bash
 set -Eeuo pipefail
 
 umask 077

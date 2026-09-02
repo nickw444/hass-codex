@@ -39,4 +39,4 @@ COPY run.sh /run.sh
 RUN chmod 0755 /run.sh
 
 WORKDIR /config
-CMD ["/run.sh"]
+CMD ["/usr/bin/with-contenv", "bashio", "/run.sh"]
