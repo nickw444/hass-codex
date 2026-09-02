@@ -28,6 +28,7 @@ jobs:
         with:
           image: ${{ matrix.arch }}
           args: |
+            --docker-hub-check \
             --${{ matrix.arch }} \
             --target /data/codex_remote \
             --image ${{ matrix.arch }}-addon-hass-codex \
